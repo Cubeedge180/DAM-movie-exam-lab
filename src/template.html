@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Movie App Exam Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Plan: Android-green on deep ink, mono editor as the hero, a left rail of exercises and one workbench panel. */
+:root {
+  --bg: #f4f7f5;
+  --surface: #ffffff;
+  --surface-2: #ecf1ee;
+  --ink: #14201b;
+  --muted: #566961;
+  --line: #d5dfda;
+  --accent: #0a7a49;
+  --accent-ink: #ffffff;
+  --good: #0a7a49;
+  --bad: #b3261e;
+  --warn: #9a5b00;
+  --code-bg: #eef3f0;
+  --code-ink: #14201b;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-code: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a120e; --surface: #111c16; --surface-2: #17261e; --ink: #e3eee8; --muted: #8fa59a;
+    --line: #243629; --accent: #3ddc84; --accent-ink: #04210f; --good: #3ddc84; --bad: #ff8a80; --warn: #ffc266;
+    --code-bg: #0b140f; --code-ink: #dff0e6; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a120e; --surface: #111c16; --surface-2: #17261e; --ink: #e3eee8; --muted: #8fa59a;
+  --line: #243629; --accent: #3ddc84; --accent-ink: #04210f; --good: #3ddc84; --bad: #ff8a80; --warn: #ffc266;
+  --code-bg: #0b140f; --code-ink: #dff0e6; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 56px; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.01em; }
+code, pre, textarea { font-family: var(--font-code); }
+button { font: inherit; cursor: pointer; }
+button:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.top { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; justify-content: space-between; margin-bottom: 18px; }
+.sub { color: var(--muted); margin: 6px 0 0; max-width: 62ch; }
+.progress { min-width: 240px; flex: 0 1 280px; }
+.progress .lbl { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+.bar { height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; border: 1px solid var(--line); }
+.bar > i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 18px; flex-wrap: wrap; }
+.tab { background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 14px; color: var(--muted); font-weight: 600; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+.lab { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .lab { grid-template-columns: 1fr; } }
+.rail { display: flex; flex-direction: column; gap: 14px; }
+.group h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; }
+.exlist { display: flex; flex-direction: column; gap: 4px; }
+@media (max-width: 860px) { .exlist { flex-direction: row; flex-wrap: wrap; } }
+.exbtn { display: flex; gap: 8px; align-items: center; text-align: left; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 8px 10px; font-size: 0.9rem; width: 100%; }
+@media (max-width: 860px) { .exbtn { width: auto; } }
+.exbtn[aria-current="true"] { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); background: var(--surface-2); }
+.dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--muted); flex: none; }
+.dot.partial { border-color: var(--warn); background: linear-gradient(90deg, var(--warn) 50%, transparent 50%); }
+.dot.solved { border-color: var(--good); background: var(--good); }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; min-width: 0; }
+.panel .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.pill { font-family: var(--font-code); font-size: 0.75rem; background: var(--surface-2); border: 1px solid var(--line); border-radius: 99px; padding: 2px 10px; color: var(--muted); }
+.panel h2 { font-size: 1.3rem; margin-bottom: 8px; }
+.prompt { margin: 0 0 14px; max-width: 75ch; }
+.editor { width: 100%; background: var(--code-bg); color: var(--code-ink); border: 1px solid var(--line); border-radius: 10px; padding: 14px; font-size: 0.86rem; line-height: 1.55; tab-size: 4; resize: vertical; min-height: 240px; white-space: pre; overflow: auto; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 8px 14px; font-weight: 600; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.ghost { color: var(--muted); }
+.results { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.results li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); font-size: 0.92rem; }
+.results .mark { font-family: var(--font-code); font-weight: 700; width: 1.4em; flex: none; }
+.results li.ok { border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
+.results li.ok .mark { color: var(--good); }
+.results li.no { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+.results li.no .mark { color: var(--bad); }
+.results li.opt .tagopt { color: var(--muted); font-size: 0.78rem; margin-left: 6px; }
+.verdict { margin: 12px 0 0; padding: 10px 12px; border-radius: 8px; font-weight: 600; background: var(--surface-2); border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.verdict.good { border-color: var(--good); color: var(--good); }
+.note, .hintbox { font-size: 0.92rem; color: var(--muted); }
+.hintbox { border-left: 3px solid var(--warn); padding: 6px 12px; margin: 10px 0; background: var(--surface-2); border-radius: 0 8px 8px 0; color: var(--ink); }
+.solution { margin-top: 12px; }
+.solution pre, pre.codeblock { background: var(--code-bg); color: var(--code-ink); border: 1px solid var(--line); border-radius: 10px; padding: 14px; font-size: 0.84rem; line-height: 1.55; overflow-x: auto; margin: 0; tab-size: 4; }
+.nav2 { display: flex; justify-content: space-between; gap: 8px; margin-top: 16px; }
+
+.qf { display: flex; flex-direction: column; gap: 14px; }
+.qcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.qcard h3 { font-size: 1rem; margin-bottom: 10px; }
+.qcard .opts { display: grid; gap: 6px; }
+.opt { text-align: left; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 9px 12px; }
+.opt.right { border-color: var(--good); background: color-mix(in srgb, var(--good) 14%, var(--surface)); }
+.opt.wrong { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, var(--surface)); }
+.why { margin-top: 10px; font-size: 0.92rem; }
+
+.cheat { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); }
+.csec { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+.csec.wide { grid-column: 1 / -1; }
+.csec h3 { font-size: 1rem; margin-bottom: 10px; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.csec ul { margin: 0; padding-left: 20px; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: .05em; }
+td code { font-size: 0.82rem; }
+.small { font-size: 0.8rem; padding: 3px 10px; }
+
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+.modal.open { display: flex; }
+.modal .box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; width: min(760px, 100%); max-height: 90%; display: flex; flex-direction: column; gap: 10px; }
+.modal textarea { width: 100%; min-height: 280px; background: var(--code-bg); color: var(--code-ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: 0.8rem; }
+.foot { margin-top: 24px; color: var(--muted); font-size: 0.88rem; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+@media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Movie App Exam Lab</h1>
+      <p class="sub">Write the real code for the test: the Movie class, saveMovie() validation, and delete with a confirmation dialog and UNDO. Press Check and see which requirements your code meets.</p>
+    </div>
+    <div class="progress" aria-live="polite">
+      <div class="lbl"><span id="progLabel">0 of 0 solved</span><span id="progPct">0%</span></div>
+      <div class="bar"><i id="progBar"></i></div>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-lab" aria-selected="true" data-tab="lab">Code lab</button>
+    <button class="tab" role="tab" id="tab-qf" aria-selected="false" data-tab="qf">Quick fire</button>
+    <button class="tab" role="tab" id="tab-cheat" aria-selected="false" data-tab="cheat">Cheat sheet</button>
+  </div>
+
+  <main id="view"></main>
+
+  <div class="foot">
+    <span>The checker matches code patterns, it is not a compiler. For a full review, copy your answers and paste them to Claude in the chat.</span>
+    <span><button class="btn" id="copyAll">Copy all my answers</button> <button class="btn ghost" id="resetAll">Reset everything</button></span>
+  </div>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Copy answers">
+  <div class="box">
+    <strong id="modalTitle">Copy your answers</strong>
+    <textarea id="modalText" readonly spellcheck="false"></textarea>
+    <div class="row" style="margin:0"><button class="btn primary" id="modalClose">Close</button></div>
+  </div>
+</div>
+
+<script>
+/*DATA*/
+</script>
+<script>
+(function () {
+  "use strict";
+  var STORE_KEY = "movielab-v1";
+  var state = { tab: "lab", cur: 0, code: {}, status: {}, hint: {}, peek: {}, results: {}, qf: {} };
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return;
+      var s = JSON.parse(raw);
+      state.code = s.code || {}; state.status = s.status || {}; state.qf = s.qf || {};
+      state.cur = typeof s.cur === "number" ? s.cur : 0;
+    } catch (e) { /* storage unavailable: run without it */ }
+  }
+  function save() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ code: state.code, status: state.status, qf: state.qf, cur: state.cur })); } catch (e) {}
+  }
+
+  function el(tag, attrs) {
+    var n = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === "class") n.className = attrs[k];
+      else if (k === "text") n.textContent = attrs[k];
+      else if (k.indexOf("on") === 0) n.addEventListener(k.slice(2), attrs[k]);
+      else n.setAttribute(k, attrs[k]);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c == null) continue;
+      n.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+    }
+    return n;
+  }
+
+  function codeFor(ex) { return state.code[ex.id] != null ? state.code[ex.id] : ex.starter; }
+
+  function grade(ex) {
+    var c = norm(codeFor(ex));
+    var res = ex.checks.map(function (ch) { var ok = false; try { ok = !!ch.test(c); } catch (e) {} return { ch: ch, ok: ok }; });
+    var req = res.filter(function (r) { return !r.ch.optional; });
+    var passed = req.filter(function (r) { return r.ok; }).length;
+    return { res: res, passed: passed, total: req.length, solved: passed === req.length };
+  }
+
+  function updateProgress() {
+    var solved = EXERCISES.filter(function (e) { return state.status[e.id] === "solved"; }).length;
+    var n = EXERCISES.length;
+    document.getElementById("progLabel").textContent = solved + " of " + n + " solved";
+    document.getElementById("progPct").textContent = Math.round(solved / n * 100) + "%";
+    document.getElementById("progBar").style.width = (solved / n * 100) + "%";
+  }
+
+  /* ---------- CODE LAB ---------- */
+  function renderLab(view) {
+    var lab = el("div", { class: "lab" });
+    var rail = el("nav", { class: "rail", "aria-label": "Exercises" });
+    var groups = [];
+    EXERCISES.forEach(function (ex, i) {
+      var g = groups.length && groups[groups.length - 1].name === ex.group ? groups[groups.length - 1] : null;
+      if (!g) { g = { name: ex.group, items: [] }; groups.push(g); }
+      g.items.push(i);
+    });
+    groups.forEach(function (g) {
+      var list = el("div", { class: "exlist" });
+      g.items.forEach(function (i) {
+        var ex = EXERCISES[i];
+        var st = state.status[ex.id] || "none";
+        var b = el("button", { class: "exbtn", "aria-current": String(i === state.cur), onclick: function () { state.cur = i; save(); render(); } },
+          el("span", { class: "dot " + st }), el("span", { text: (i + 1) + ". " + ex.title }));
+        list.appendChild(b);
+      });
+      rail.appendChild(el("div", { class: "group" }, el("h3", { text: g.name }), list));
+    });
+    lab.appendChild(rail);
+    lab.appendChild(renderExercise(EXERCISES[state.cur]));
+    view.appendChild(lab);
+  }
+
+  function renderExercise(ex) {
+    var i = EXERCISES.indexOf(ex);
+    var panel = el("section", { class: "panel" });
+    panel.appendChild(el("div", { class: "meta" }, el("span", { class: "pill", text: "Exercise " + (i + 1) + " of " + EXERCISES.length }), el("span", { class: "pill", text: ex.file })));
+    panel.appendChild(el("h2", { text: ex.title }));
+    panel.appendChild(el("p", { class: "prompt", text: ex.prompt }));
+
+    var ta = el("textarea", { class: "editor", id: "editor", spellcheck: "false", autocapitalize: "off", autocomplete: "off", "aria-label": "Your code for " + ex.title });
+    ta.value = codeFor(ex);
+    function fit() { var lines = ta.value.split("\n").length; ta.style.height = Math.max(240, Math.min(720, lines * 21 + 32)) + "px"; }
+    ta.addEventListener("input", function () { state.code[ex.id] = ta.value; save(); fit(); });
+    ta.addEventListener("keydown", function (e) {
+      if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); ta.setRangeText("    ", ta.selectionStart, ta.selectionEnd, "end"); ta.dispatchEvent(new Event("input")); }
+      else if (e.key === "Enter") {
+        var pos = ta.selectionStart, v = ta.value, ls = v.lastIndexOf("\n", pos - 1) + 1;
+        var indent = (v.slice(ls, pos).match(/^\s*/) || [""])[0];
+        var extra = v.charAt(pos - 1) === "{" ? "    " : "";
+        e.preventDefault(); ta.setRangeText("\n" + indent + extra, pos, ta.selectionEnd, "end"); ta.dispatchEvent(new Event("input"));
+      }
+    });
+    panel.appendChild(ta);
+    fit();
+
+    var out = el("div", { id: "out" });
+    function showResults(g) {
+      out.textContent = "";
+      var ul = el("ul", { class: "results" });
+      g.res.forEach(function (r) {
+        var li = el("li", { class: (r.ok ? "ok" : "no") + (r.ch.optional ? " opt" : "") },
+          el("span", { class: "mark", text: r.ok ? "✓" : "✗" }),
+          el("span", null, r.ch.label, r.ch.optional ? el("span", { class: "tagopt", text: "bonus" }) : null));
+        ul.appendChild(li);
+      });
+      var v = el("p", { class: "verdict" + (g.solved ? " good" : ""), role: "status",
+        text: g.solved ? "All " + g.total + " requirements met. Compare with the solution to see any style differences." : g.passed + " of " + g.total + " requirements met. Fix the red lines and check again." });
+      out.appendChild(v); out.appendChild(ul);
+    }
+
+    function check() {
+      var g = grade(ex);
+      state.status[ex.id] = g.solved ? "solved" : (g.passed > 0 ? "partial" : "none");
+      save(); showResults(g); updateProgress();
+      var dot = document.querySelectorAll(".exbtn")[i];
+      if (dot) dot.querySelector(".dot").className = "dot " + (state.status[ex.id] === "none" ? "" : state.status[ex.id]);
+    }
+
+    var hintBox = el("div");
+    var solBox = el("div", { class: "solution" });
+    var row = el("div", { class: "row" },
+      el("button", { class: "btn primary", text: "Check my code", onclick: check }),
+      el("button", { class: "btn", text: "Show hint", onclick: function () { hintBox.textContent = ""; hintBox.appendChild(el("div", { class: "hintbox", text: ex.hint })); } }),
+      el("button", { class: "btn", text: "Show solution", onclick: function () {
+        if (solBox.firstChild) { solBox.textContent = ""; return; }
+        solBox.appendChild(el("div", { class: "note", text: "Try to write it yourself first, then compare." }));
+        solBox.appendChild(el("pre", { text: ex.solution }));
+        solBox.appendChild(el("div", { class: "row" }, el("button", { class: "btn small", text: "Copy solution", onclick: function () { copyText(ex.solution, "Solution"); } })));
+      } }),
+      el("button", { class: "btn ghost", text: "Reset exercise", onclick: function () { delete state.code[ex.id]; delete state.status[ex.id]; save(); render(); } })
+    );
+    panel.appendChild(row); panel.appendChild(hintBox); panel.appendChild(out); panel.appendChild(solBox);
+
+    var prev = el("button", { class: "btn", text: "Previous", onclick: function () { if (state.cur > 0) { state.cur--; save(); render(); } } });
+    var next = el("button", { class: "btn", text: "Next", onclick: function () { if (state.cur < EXERCISES.length - 1) { state.cur++; save(); render(); } } });
+    if (i === 0) prev.disabled = true; if (i === EXERCISES.length - 1) next.disabled = true;
+    panel.appendChild(el("div", { class: "nav2" }, prev, next));
+    return panel;
+  }
+
+  /* ---------- QUICK FIRE ---------- */
+  function renderQF(view) {
+    var done = Object.keys(state.qf).length;
+    var right = QUICKFIRE.filter(function (q, i) { return state.qf[i] === q.a; }).length;
+    var wrap = el("div", { class: "qf" });
+    wrap.appendChild(el("p", { class: "note", text: "Concept questions the exam may ask you to explain. Answered " + done + " of " + QUICKFIRE.length + ", correct " + right + "." }));
+    QUICKFIRE.forEach(function (q, qi) {
+      var answered = state.qf[qi] != null;
+      var card = el("div", { class: "qcard" }, el("h3", { text: (qi + 1) + ". " + q.q }));
+      var opts = el("div", { class: "opts" });
+      q.opts.forEach(function (o, oi) {
+        var cls = "opt";
+        if (answered) { if (oi === q.a) cls += " right"; else if (oi === state.qf[qi]) cls += " wrong"; }
+        opts.appendChild(el("button", { class: cls, text: o, onclick: function () { if (state.qf[qi] != null) return; state.qf[qi] = oi; save(); render(); } }));
+      });
+      card.appendChild(opts);
+      if (answered) card.appendChild(el("p", { class: "why", text: (state.qf[qi] === q.a ? "Correct. " : "Not quite. ") + q.why }));
+      wrap.appendChild(card);
+    });
+    wrap.appendChild(el("div", { class: "row" }, el("button", { class: "btn", text: "Retake quick fire", onclick: function () { state.qf = {}; save(); render(); } })));
+    view.appendChild(wrap);
+  }
+
+  /* ---------- CHEAT SHEET ---------- */
+  function renderCheat(view) {
+    var grid = el("div", { class: "cheat" });
+    CHEAT.forEach(function (s) {
+      var sec = el("section", { class: "csec" + (s.kind === "table" || s.kind === "list" ? "" : " wide") });
+      var h = el("h3", null, el("span", { text: s.title }));
+      if (s.kind === "code") h.appendChild(el("button", { class: "btn small", text: "Copy", onclick: function () { copyText(s.code, s.title); } }));
+      sec.appendChild(h);
+      if (s.kind === "code") sec.appendChild(el("pre", { class: "codeblock", text: s.code }));
+      else if (s.kind === "list") { var ul = el("ul"); s.items.forEach(function (t) { ul.appendChild(el("li", { text: t })); }); sec.appendChild(ul); }
+      else if (s.kind === "table") {
+        var t = el("table"); var hr = el("tr");
+        s.head.forEach(function (x) { hr.appendChild(el("th", { text: x })); });
+        t.appendChild(el("thead", null, hr));
+        var tb = el("tbody");
+        s.rows.forEach(function (r) { var tr = el("tr"); r.forEach(function (c, ci) { tr.appendChild(el("td", null, ci === 0 && s.head.length > 2 ? el("strong", { text: c }) : (ci > 0 && s.head.length > 2 ? el("code", { text: c }) : c))); }); tb.appendChild(tr); });
+        t.appendChild(tb); sec.appendChild(el("div", { class: "tbl" }, t));
+      }
+      grid.appendChild(sec);
+    });
+    view.appendChild(grid);
+  }
+
+  /* ---------- COPY ---------- */
+  function showModal(title, text) {
+    document.getElementById("modalTitle").textContent = title;
+    var ta = document.getElementById("modalText"); ta.value = text;
+    document.getElementById("modal").classList.add("open");
+    ta.focus(); ta.select();
+  }
+  function copyText(text, title) {
+    var done = false;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { flash("Copied"); }, function () { showModal(title + ": select all and copy", text); });
+        done = true;
+      }
+    } catch (e) { done = false; }
+    if (!done) showModal(title + ": select all and copy", text);
+  }
+  function flash(msg) {
+    var b = document.getElementById("copyAll"); var old = b.textContent; b.textContent = msg; setTimeout(function () { b.textContent = old; }, 1400);
+  }
+  function allAnswers() {
+    var parts = ["Please review my Android exam answers (Movie class, validation, delete + undo). For each exercise tell me what is wrong and what to fix.\n"];
+    EXERCISES.forEach(function (ex, i) {
+      var g = grade(ex);
+      parts.push("=== Exercise " + (i + 1) + ": " + ex.title + " [" + ex.file + "] (checker: " + g.passed + "/" + g.total + ") ===\n" + codeFor(ex) + "\n");
+    });
+    return parts.join("\n");
+  }
+
+  /* ---------- SHELL ---------- */
+  function render() {
+    var view = document.getElementById("view"); view.textContent = "";
+    ["lab", "qf", "cheat"].forEach(function (t) { document.getElementById("tab-" + t).setAttribute("aria-selected", String(state.tab === t)); });
+    if (state.tab === "lab") renderLab(view); else if (state.tab === "qf") renderQF(view); else renderCheat(view);
+    updateProgress();
+  }
+
+  document.querySelectorAll(".tab").forEach(function (b) { b.addEventListener("click", function () { state.tab = b.getAttribute("data-tab"); render(); }); });
+  document.getElementById("copyAll").addEventListener("click", function () { copyText(allAnswers(), "All answers"); });
+  document.getElementById("modalClose").addEventListener("click", function () { document.getElementById("modal").classList.remove("open"); });
+  document.getElementById("resetAll").addEventListener("click", function () {
+    var b = document.getElementById("resetAll");
+    if (b.getAttribute("data-armed") !== "1") { b.setAttribute("data-armed", "1"); b.textContent = "Click again to erase all"; setTimeout(function () { b.removeAttribute("data-armed"); b.textContent = "Reset everything"; }, 2500); return; }
+    state.code = {}; state.status = {}; state.qf = {}; state.cur = 0; save(); b.removeAttribute("data-armed"); b.textContent = "Reset everything"; render();
+  });
+
+  load();
+  render();
+})();
+</script>
+</body>
+</html>
