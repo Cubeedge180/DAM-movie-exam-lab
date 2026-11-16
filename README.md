@@ -1,5 +1,8 @@
 # DAM Movie Exam Lab
 
+> **Matches the G1096 project** (package `ro.ase.ie.g1096`): the list variable is `recyclerView`, the listener is the nested `MovieAdapter.OnMovieListener`, and the dialog is `MaterialAlertDialogBuilder` as in lecture 3. A new **Lecture quiz** tab has 80 multiple-choice questions on lectures 1 to 6 (filter by lecture).
+
+
 An interactive practice lab for the Android (DMA) test on the **Movie app**. You write the real Java and XML yourself, press **Check**, and see which requirements your code meets.
 
 It covers the three things the test asks for:
@@ -8,7 +11,7 @@ It covers the three things the test asks for:
 2. **Validation of the variables used by `saveMovie()`**.
 3. **Deleting a movie**: a button, a confirmation dialog, then a Snackbar with **UNDO** that restores the movie.
 
-The exercises are based on the `G1098-14.11.2026(week7-full)` project (`MainActivity`, `ItemActivity`, `MovieAdapter`, `IMovieListener`, `Movie`), so class, field and ID names match the code you work with in class.
+The exercises are based on the `G1098-14.11.2026(week7-full)` project (`MainActivity`, `ItemActivity`, `MovieAdapter`, `OnMovieListener`, `Movie`), so class, field and ID names match the code you work with in class.
 
 ## Run it
 
@@ -32,7 +35,7 @@ You get an editor with a starter, write the code, and press **Check my code**.
 | 5 | B. Validation | `validateForm()` part 2: duration, rating, approval, poster | `ItemActivity.java` |
 | 6 | B. Validation | Call it from `saveMovie()` and fix the edit-date bug | `ItemActivity.java` |
 | 7 | C. Delete + Undo | Delete `ImageButton` in the row layout | `movie_item.xml` |
-| 8 | C. Delete + Undo | Add `onMovieDelete` to the listener interface | `IMovieListener.java` |
+| 8 | C. Delete + Undo | Add `onMovieDelete` to the listener interface | `OnMovieListener.java` |
 | 9 | C. Delete + Undo | Wire the button in the `ViewHolder` | `MovieAdapter.java` |
 | 10 | C. Delete + Undo | Confirmation `AlertDialog` | `MainActivity.java` |
 | 11 | C. Delete + Undo | `deleteWithUndo()`: remove, Snackbar, UNDO | `MainActivity.java` |

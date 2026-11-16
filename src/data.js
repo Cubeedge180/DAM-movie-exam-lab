@@ -14,7 +14,7 @@ const MOVIE_FIELDS = ["title", "release", "genre", "budget", "duration", "rating
 
 const SOL = {};
 
-SOL.fields = `package com.example.group1098.model;
+SOL.fields = `package ro.ase.ie.g1096.model;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -169,11 +169,8 @@ SOL.xml = `<ImageButton
     android:contentDescription="Delete movie"
     android:src="@android:drawable/ic_menu_delete" />`;
 
-SOL.iface = `package com.example.group1098.adapter;
-
-import com.example.group1098.model.Movie;
-
-public interface IMovieListener {
+SOL.iface = `// inside MovieAdapter.java (the interface is nested in the adapter)
+public interface OnMovieListener {
     void onMovieClick(Movie movie, int position);
 
     void onMovieDelete(Movie movie, int position);
@@ -204,7 +201,7 @@ SOL.holder = `class MovieViewHolder extends RecyclerView.ViewHolder {
 
 SOL.dialog = `@Override
 public void onMovieDelete(Movie movie, int position) {
-    new AlertDialog.Builder(this)
+    new MaterialAlertDialogBuilder(this)
             .setTitle("Delete movie")
             .setMessage("Do you want to delete " + movie.getTitle() + "?")
             .setPositiveButton("Delete", (dialog, which) -> deleteWithUndo(position))
@@ -216,13 +213,13 @@ SOL.undo = `private void deleteWithUndo(int position) {
     final Movie removed = movies.remove(position);
     movieAdapter.notifyDataSetChanged();
 
-    Snackbar.make(rvMovies, "Movie deleted", Snackbar.LENGTH_LONG)
+    Snackbar.make(recyclerView, "Movie deleted", Snackbar.LENGTH_LONG)
             .setAnchorView(fabInsert)
             .setAction("UNDO", v -> {
                 int index = Math.min(position, movies.size());
                 movies.add(index, removed);
                 movieAdapter.notifyDataSetChanged();
-                rvMovies.scrollToPosition(index);
+                recyclerView.scrollToPosition(index);
             })
             .show();
 }`;
@@ -252,7 +249,7 @@ const EXERCISES = [
     id: "fields", group: "A. Movie class", title: "Declare the Movie class and its fields",
     file: "model/Movie.java",
     prompt: "Write the whole file. The class must travel inside an Intent, so pick the right interface. It has 10 private fields (title, release, genre, budget, duration, rating, watched, approval, onWatchlist, posterUrl) and an empty constructor. Choose the right type for each field.",
-    starter: `package com.example.group1098.model;
+    starter: `package ro.ase.ie.g1096.model;
 
 // TODO: imports
 
@@ -421,13 +418,10 @@ const EXERCISES = [
   },
   {
     id: "iface", group: "C. Delete + Undo", title: "Extend the listener interface",
-    file: "adapter/IMovieListener.java",
-    prompt: "Rewrite the interface so the row can report a delete request. Keep the existing click method.",
-    starter: `package com.example.group1098.adapter;
-
-import com.example.group1098.model.Movie;
-
-public interface IMovieListener {
+    file: "adapter/MovieAdapter.java (nested interface OnMovieListener)",
+    prompt: "In your project the listener is the interface OnMovieListener nested inside MovieAdapter. Rewrite it so the row can report a delete request. Keep the existing click method.",
+    starter: `// inside MovieAdapter.java
+public interface OnMovieListener {
     void onMovieClick(Movie movie, int position);
 
     // TODO: delete callback
@@ -436,7 +430,7 @@ public interface IMovieListener {
     checks: [
       { label: "Still declares onMovieClick(Movie, int)", test: re(/void\s+onMovieClick\s*\(\s*Movie\s+\w+\s*,\s*int\s+\w+\s*\)\s*;/) },
       { label: "Declares void onMovieDelete(Movie movie, int position);", test: re(/void\s+onMovieDelete\s*\(\s*Movie\s+\w+\s*,\s*int\s+\w+\s*\)\s*;/) },
-      { label: "It is still an interface", test: re(/public\s+interface\s+IMovieListener/) },
+      { label: "It is still an interface named OnMovieListener", test: re(/interface\s+OnMovieListener/) },
     ],
     solution: SOL.iface,
   },
@@ -470,17 +464,18 @@ public interface IMovieListener {
   {
     id: "dialog", group: "C. Delete + Undo", title: "Confirmation dialog in MainActivity",
     file: "activities/MainActivity.java",
-    prompt: "Implement onMovieDelete. Show an AlertDialog with a title, a message that contains the movie title, a Delete button that calls deleteWithUndo(position), and a Cancel button that does nothing. Do NOT remove the movie here: removal happens only after confirmation, inside deleteWithUndo.",
-    starter: `// imports needed: androidx.appcompat.app.AlertDialog
+    prompt: "Implement onMovieDelete. Show a MaterialAlertDialogBuilder dialog (as in lecture 3) with a title, a message that contains the movie title, a Delete button that calls deleteWithUndo(position), and a Cancel button that does nothing. Do NOT remove the movie here: removal happens only after confirmation, inside deleteWithUndo.",
+    starter: `// imports needed: com.google.android.material.dialog.MaterialAlertDialogBuilder
+//   (lecture 3; androidx.appcompat.app.AlertDialog.Builder also works)
 
 @Override
 public void onMovieDelete(Movie movie, int position) {
     // TODO: build and show the dialog
 }`,
-    hint: "new AlertDialog.Builder(this).setTitle(...).setMessage(...).setPositiveButton(\"Delete\", (dialog, which) -> ...).setNegativeButton(\"Cancel\", null).show();",
+    hint: "new MaterialAlertDialogBuilder(this).setTitle(...).setMessage(...).setPositiveButton(\"Delete\", (dialog, which) -> ...).setNegativeButton(\"Cancel\", null).show();",
     checks: [
       { label: "@Override public void onMovieDelete(Movie movie, int position)", test: re(/public\s+void\s+onMovieDelete\s*\(\s*(final\s+)?Movie\s+\w+\s*,\s*(final\s+)?int\s+\w+\s*\)/) },
-      { label: "new AlertDialog.Builder(this or MainActivity.this)", test: re(/new\s+AlertDialog\.Builder\s*\(\s*(this|MainActivity\.this)\s*\)/) },
+      { label: "new MaterialAlertDialogBuilder(this) (lecture 3) or AlertDialog.Builder(this)", test: re(/new\s+(MaterialAlertDialogBuilder|AlertDialog\.Builder)\s*\(\s*(this|MainActivity\.this)\s*\)/) },
       { label: "setTitle(...) and setMessage(...)", test: (c) => /\.setTitle\s*\(/.test(c) && /\.setMessage\s*\(/.test(c) },
       { label: "Message includes movie.getTitle()", test: re(/setMessage\s*\([^;]*getTitle\s*\(\s*\)/) },
       { label: "setPositiveButton(...) calls deleteWithUndo(position)", test: re(/setPositiveButton\s*\([\s\S]*deleteWithUndo\s*\(\s*\w+\s*\)/) },
@@ -493,9 +488,9 @@ public void onMovieDelete(Movie movie, int position) {
   {
     id: "undo", group: "C. Delete + Undo", title: "deleteWithUndo(): remove, Snackbar, UNDO",
     file: "activities/MainActivity.java",
-    prompt: "Write deleteWithUndo(int position). Remove the movie and keep the removed object, refresh the adapter, then show a Snackbar on rvMovies with an UNDO action. UNDO puts the same movie back at the same index (never past the end of the list) and refreshes again.",
+    prompt: "Write deleteWithUndo(int position). Remove the movie and keep the removed object, refresh the adapter, then show a Snackbar on recyclerView with an UNDO action. UNDO puts the same movie back at the same index (never past the end of the list) and refreshes again.",
     starter: `// imports needed: com.google.android.material.snackbar.Snackbar
-// fields available: movies (ArrayList<Movie>), movieAdapter, rvMovies, fabInsert
+// fields available: movies (ArrayList<Movie>), movieAdapter, recyclerView, fabInsert
 
 private void deleteWithUndo(int position) {
     // TODO 1: remove the movie and keep it
@@ -548,7 +543,7 @@ if (o.getResultCode() == RESULT_OK) {
 const QUICKFIRE = [
   { q: "Why does Movie implement Serializable?", opts: ["So it can be stored in a Room database", "So it can be passed in an Intent with putExtra / getSerializableExtra", "So RecyclerView can display it", "So its fields become immutable"], a: 1, why: "Intent extras only accept Parcelable, Serializable or primitive types. Without Serializable, putExtra(MOVIE_EXTRA, movie) does not compile." },
   { q: "What is the correct getter name for the boolean field watched?", opts: ["getWatched()", "isWatched()", "hasWatched()", "watched()"], a: 1, why: "Boolean getters use the is prefix: isWatched(), isOnWatchlist()." },
-  { q: "Which call returns the row position inside a ViewHolder click listener?", opts: ["The position parameter of onBindViewHolder, saved in a field", "getAbsoluteAdapterPosition()", "getItemCount()", "rvMovies.getChildCount()"], a: 1, why: "A saved bind-time position can go stale. getAbsoluteAdapterPosition() is live; always compare it with RecyclerView.NO_POSITION." },
+  { q: "Which call returns the row position inside a ViewHolder click listener?", opts: ["The position parameter of onBindViewHolder, saved in a field", "getAbsoluteAdapterPosition()", "getItemCount()", "recyclerView.getChildCount()"], a: 1, why: "A saved bind-time position can go stale. getAbsoluteAdapterPosition() is live; always compare it with RecyclerView.NO_POSITION." },
   { q: "Double.parseDouble(\"\") on an empty EditText does what?", opts: ["Returns 0.0", "Returns null", "Throws NumberFormatException", "Throws NullPointerException"], a: 2, why: "That is the crash in the current saveMovie(). Check isEmpty() first and wrap parsing in try/catch." },
   { q: "A SeekBar has no setError(). How do you report a bad duration?", opts: ["Toast (or Snackbar)", "seekBar.setError()", "Throw an exception", "Change the title text"], a: 0, why: "Only EditText (and TextInputLayout) support setError. For SeekBar, RatingBar and RadioGroup use a Toast." },
   { q: "RadioGroup.getCheckedRadioButtonId() returns what when nothing is selected?", opts: ["0", "null", "-1", "The first button's id"], a: 2, why: "It returns -1. In this layout G is checked by default, but the check is still the correct pattern." },
@@ -567,7 +562,7 @@ const CHEAT = [
     items: [
       "1. Read Movie + ItemActivity. Say the widget-to-field mapping out loud.",
       "2. Validation first (10 min): validateForm() + the if (!validateForm()) return; line.",
-      "3. Delete in this order, compile after each step: row XML button > IMovieListener > ViewHolder > MainActivity dialog + deleteWithUndo.",
+      "3. Delete in this order, compile after each step: row XML button > OnMovieListener > ViewHolder > MainActivity dialog + deleteWithUndo.",
       "4. Run the test checklist: add / edit / cancel / delete / undo / delete first, middle, last.",
       "5. Do not refactor anything the exam did not ask for.",
     ],
@@ -592,10 +587,10 @@ const CHEAT = [
   { title: "Imports you will need", kind: "code", code: `// ItemActivity.java
 import android.widget.Toast;
 import android.util.Patterns;
-import androidx.appcompat.app.AlertDialog;   // only for Option B
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;   // only for Option B
 
 // MainActivity.java
-import androidx.appcompat.app.AlertDialog;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;   // or androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar;
 
 // MovieAdapter.java
@@ -610,7 +605,7 @@ import java.util.Date;` },
   { title: "Validation: part 2 (continue inside the same method)", kind: "code", code: SOL.val2 },
   { title: "Hook + edit-date fix + genre fix", kind: "code", code: SOL.hook + "\n\n<!-- res/values/strings.xml, inside movie_genre -->\n<item>Animation</item>" },
   { title: "Delete step 1: row layout button (movie_item.xml)", kind: "code", code: SOL.xml },
-  { title: "Delete step 2: interface", kind: "code", code: "// IMovieListener.java\nvoid onMovieDelete(Movie movie, int position);" },
+  { title: "Delete step 2: interface", kind: "code", code: "// MovieAdapter.OnMovieListener\nvoid onMovieDelete(Movie movie, int position);" },
   { title: "Delete step 3: ViewHolder wiring", kind: "code", code: SOL.holder },
   { title: "Delete step 4: dialog + deleteWithUndo (MainActivity)", kind: "code", code: SOL.dialog + "\n\n" + SOL.undo },
   { title: "Option B: button on the edit form", kind: "code", code: `<!-- activity_item.xml, after the Save button -->
@@ -647,7 +642,7 @@ private Button btDelete;
     kind: "table",
     head: ["Mistake", "What happens"],
     rows: [
-      ["Added onMovieDelete to IMovieListener, forgot it in MainActivity", "MainActivity does not compile"],
+      ["Added onMovieDelete to OnMovieListener, forgot it in MainActivity", "MainActivity does not compile"],
       ["Removed the movie before the dialog was confirmed", "Cancel does not cancel"],
       ["Forgot .show() on AlertDialog or Snackbar", "Nothing appears"],
       ["movies.add(removed) on UNDO", "Movie returns at the end of the list"],
@@ -658,4 +653,102 @@ private Button btDelete;
       ["Added a field to Movie, forgot addSampleMovies()", "10-argument constructor calls no longer compile"],
     ],
   },
+];
+
+const LECTURES = {
+  1: "Lecture 1: Android Intro",
+  2: "Lecture 2: Android Basics (components, lifecycle, intents)",
+  3: "Lecture 3: UI-UX (Material, menus, layouts)",
+  4: "Lecture 4: Controls and event listeners",
+  5: "Lecture 5: Adapters and lists",
+  6: "Lecture 6: Asynchronous operations",
+};
+const q = (lec, text, opts, a, why) => ({ lec, q: text, opts, a, why });
+const THEORY = [
+  /* ---- Lecture 1 ---- */
+  q(1, "Which layer sits directly on top of the Linux kernel in the Android software stack?", ["Java API framework", "Hardware abstraction layer", "Apps", "ART + native libraries"], 1, "Bottom to top: Linux kernel, hardware abstraction (camera, sensors, audio), ART + native libraries, Java API framework, Apps."),
+  q(1, "What kind of bytecode runs on an Android device?", ["Java .class files", ".dex (Dalvik) bytecode", "Native x86 only", "JavaScript"], 1, "Java .class / .jar files are converted to .dex at build time. Android does not run Java SE bytecode."),
+  q(1, "Which build-tools program converts Java bytecode into Dalvik bytecode?", ["aapt", "zipalign", "dx", "adb"], 2, "dx converts to .dex. aapt compiles resources and builds the APK, zipalign aligns the APK, adb talks to devices."),
+  q(1, "How does ART differ from the older Dalvik runtime?", ["It compiles ahead of time, before execution", "It interprets Java source", "It only runs on tablets", "It removes the need for a manifest"], 0, "ART compiles before execution (AOT, dex2oat). Dalvik used a JIT compiler."),
+  q(1, "Which file in an APK holds the compiled code, and which holds the compiled resource table?", ["classes.dex and resources.arsc", "AndroidManifest.xml and classes.dex", "res and assets", "META-INF and lib"], 0, "APK contents: META-INF, lib, res, assets, AndroidManifest.xml, classes.dex, resources.arsc."),
+  q(1, "Which tool shows CPU, memory and network usage of a running app?", ["Logcat", "Android Profiler", "SDK Manager", "Device File Explorer"], 1, "Profiler: View > Tool Windows > Profiler. Logcat shows device log messages."),
+  q(1, "Which call logs an error together with an exception?", ["Log.d(TAG, \"msg\")", "Log.i(TAG, \"msg\")", "Log.e(TAG, \"msg\", exception)", "Log.v(exception)"], 2, "Levels: Log.v verbose, d debug, i info, w warning, e error."),
+  q(1, "Android 13 (Tiramisu) corresponds to which API level?", ["31", "33", "35", "29"], 1, "Android 12 = 31/32, 13 = 33, 14 = 34, 15 = 35, 16 = 36, 17 = 37."),
+  q(1, "Which tool lets the computer communicate with an emulator or a phone?", ["adb", "aapt", "dx", "zipalign"], 0, "adb (Android Debug Bridge) is in platform-tools, together with sqlite3."),
+  /* ---- Lecture 2 ---- */
+  q(2, "Which file declares which Activity is the launcher screen?", ["build.gradle", "AndroidManifest.xml", "strings.xml", "MainActivity.java"], 1, "An intent-filter with action MAIN and category LAUNCHER, inside the <activity> tag."),
+  q(2, "What is the difference between minSdk, targetSdk and compileSdk?", ["oldest supported / version you tested on / APIs you compile against", "newest supported / oldest / debug", "all three mean the same", "minSdk is the app size"], 0, "minSdk: oldest version supported. targetSdk: version you tested on. compileSdk: APIs you compile against."),
+  q(2, "Which are the four Android app components?", ["Activity, Service, Broadcast Receiver, Content Provider", "Activity, Fragment, Intent, Layout", "View, ViewGroup, Adapter, Intent", "Thread, Handler, Looper, Worker"], 0, "Activity (screen with UI), Service (work without UI), Broadcast Receiver (system events), Content Provider (share data between apps)."),
+  q(2, "Where do you request the CAMERA permission?", ["In build.gradle", "In the manifest with <uses-permission>", "In strings.xml", "In the layout file"], 1, "<uses-permission android:name=\"android.permission.CAMERA\"/>. Hardware requirements use <uses-feature>."),
+  q(2, "Which callbacks run, in order, when you press the Home button?", ["onPause, onStop", "onStop, onDestroy", "onDestroy only", "onPause, onDestroy"], 0, "Home: pause, stop (the activity stays alive). Back: pause, stop, destroy."),
+  q(2, "The visible lifetime of an Activity lasts from ... to ...", ["onCreate to onDestroy", "onStart to onStop", "onResume to onPause", "onRestart to onCreate"], 1, "Entire: onCreate to onDestroy. Visible: onStart to onStop. Foreground: onResume to onPause."),
+  q(2, "What belongs in onCreate()?", ["Inflate the layout, find views, set listeners", "Start the camera preview", "Release heavy resources", "Final cleanup"], 0, "Camera and animations go in onResume, heavy resource release in onStop, final cleanup in onDestroy."),
+  q(2, "When is onSaveInstanceState called?", ["Before an activity may be destroyed, to save dynamic UI state", "After onCreate always", "Only when the app is installed", "When the user presses Save"], 0, "Dynamic state is UI/instance state. Persistent state goes in a database, content provider or files."),
+  q(2, "Which intent type do you use to open a web page?", ["Explicit", "Implicit (ACTION_VIEW + Uri)", "Broadcast", "Ordered"], 1, "Implicit intents name an action and any capable app can answer. Explicit intents name the target class."),
+  q(2, "In getIntent().getLongExtra(\"note_id\", -1), what is -1?", ["The extra's key", "The default value if the extra is missing", "The request code", "The activity id"], 1, "Always provide a default value. Use constants for keys."),
+  q(2, "How do you get a result back from another Activity (current approach)?", ["registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), ...)", "startActivity only", "A static variable", "onBackPressed"], 0, "The other activity calls setResult(RESULT_OK, data); finish();"),
+  q(2, "Which class is the first one instantiated from the app's package?", ["Application", "MainActivity", "Context", "Intent"], 0, "The Application class holds global app state and provides getApplicationContext()."),
+  q(2, "What must an Activity that receives shared text declare?", ["An intent-filter with ACTION_SEND, category DEFAULT and a text/plain mimeType, with exported=true", "Nothing", "A Service", "A ContentProvider"], 0, "Then the app appears in the share sheet."),
+  q(2, "Why must every Activity be declared in the manifest?", ["So the system can find and launch it", "To change its color", "To make it faster", "It does not have to be"], 0, "Undeclared activities cannot be started."),
+  /* ---- Lecture 3 ---- */
+  q(3, "What does Theme.Material3.DayNight.NoActionBar mean?", ["Light + dark themes, and you add your own Toolbar", "Dark theme only", "A theme with a built-in action bar", "A style for one view"], 0, "DayNight = light and dark. NoActionBar = no default action bar, so you add a Toolbar."),
+  q(3, "Where do the dark-theme resources go?", ["values-night/", "values-dark/", "drawable/", "layout-night-only/"], 0, "Light resources in values/, dark in values-night/."),
+  q(3, "app:showAsAction=\"never\" puts a menu item ...", ["always on the app bar", "on the bar only if there is room", "only in the overflow menu", "nowhere"], 2, "always: always on the bar. ifRoom: on the bar if there is space, else overflow. never: only overflow."),
+  q(3, "Which two methods build and handle the options menu?", ["onCreateOptionsMenu and onOptionsItemSelected", "onCreate and onStart", "onMenuOpened and onClick", "setSupportActionBar and finish"], 0, "Inflate with getMenuInflater().inflate(R.menu.main_menu, menu); return true. Handle clicks with item.getItemId()."),
+  q(3, "Which feedback component fits \"Note deleted - UNDO\"?", ["Toast", "Snackbar", "Dialog", "Notification"], 1, "Toast: brief, no action. Snackbar: brief plus one action. Dialog: needs a decision."),
+  q(3, "Which component fits \"Delete file? Cancel / Delete\"?", ["Toast", "Snackbar", "Dialog", "Menu"], 2, "A dialog asks for a decision: MaterialAlertDialogBuilder with positive and negative buttons."),
+  q(3, "What is the difference between a theme and a style?", ["Theme: whole app or activity (android:theme). Style: one view (style=...)", "They are identical", "Theme is for Java, style for XML", "Style applies to the whole app"], 0, "Themes define color roles and fonts globally; a style bundles attributes for one view."),
+  q(3, "Which unit should you use for text size, and why?", ["sp, it follows the user's font preference", "px, it is exact", "dp, it ignores the font setting", "pt only"], 0, "dp is density independent (use for sizes). sp is like dp but scaled by the user's font size."),
+  q(3, "Which two layout attributes are mandatory on every view?", ["layout_width and layout_height", "padding and margin", "id and text", "gravity and weight"], 0, "Values: wrap_content, match_parent or a fixed size."),
+  q(3, "What is the difference between margin and padding?", ["Margin is outside the view, padding is inside around the content", "Margin is inside, padding is outside", "They are the same", "Padding only works in Java"], 0, "gravity positions the content inside the view; layout_gravity positions the view inside its parent."),
+  q(3, "Which visibility value hides a view and frees its space?", ["invisible", "gone", "hidden", "collapsed"], 1, "visible, invisible (hidden but keeps its space), gone (hidden and takes no space)."),
+  q(3, "Three views in a horizontal LinearLayout must share the width equally. What do you set?", ["layout_width=\"0dp\" and layout_weight=\"1\" on each", "layout_width=\"match_parent\" on each", "gravity=\"center\"", "layout_span=\"3\""], 0, "layout_weight distributes the remaining space in proportion."),
+  q(3, "A 48x48 px icon is the mdpi baseline. What size is the xhdpi version?", ["72x72", "96x96", "144x144", "192x192"], 1, "Ratio 3:4:6:8:12:16: ldpi 36, mdpi 48, hdpi 72, xhdpi 96, xxhdpi 144, xxxhdpi 192."),
+  q(3, "When can you call findViewById safely?", ["After setContentView()", "Before setContentView()", "Only in onDestroy", "Only in a Service"], 0, "The views only exist after the layout has been inflated."),
+  q(3, "In which container do children overlap, with the last child on top?", ["LinearLayout", "FrameLayout", "TableLayout", "GridLayout"], 1, "FrameLayout stacks its children; place them with layout_gravity."),
+  q(3, "What does ViewStub provide?", ["Deferred (lazy) inflation of a layout", "A permanent copy of a layout", "A toolbar", "A theme"], 0, "<include> reuses a layout, <merge> removes an extra parent, ViewStub inflates later at runtime."),
+  q(3, "Dynamic color from the wallpaper works on which Android versions?", ["Android 12+", "All versions", "Android 8+", "Android 5+"], 0, "DynamicColors.applyToActivitiesIfAvailable(this); older versions use your theme colors."),
+  /* ---- Lecture 4 ---- */
+  q(4, "How many constraints does a view need in ConstraintLayout?", ["At least one horizontal and one vertical", "Exactly four", "None", "Only a vertical one"], 0, "Without them the view jumps to the top-left at runtime. Use 0dp (match constraints), not match_parent."),
+  q(4, "How are View and ViewGroup related?", ["ViewGroup extends View and is a container", "View extends ViewGroup", "They are unrelated", "ViewGroup is a widget"], 0, "Both are in android.view. Layouts are ViewGroups, widgets are Views."),
+  q(4, "Which widget allows only one choice among a group?", ["CheckBox", "RadioButton inside a RadioGroup", "Switch", "SeekBar"], 1, "CheckBox allows several independent choices."),
+  q(4, "SeekBar extends which class?", ["ProgressBar", "TextView", "Button", "ImageView"], 0, "SeekBar extends ProgressBar and lets the user choose the value."),
+  q(4, "Which listener do you use for a CheckBox, Switch or RadioGroup?", ["setOnClickListener only", "setOnCheckedChangeListener", "addTextChangedListener", "setOnSeekBarChangeListener"], 1, "addTextChangedListener is for text (every keystroke), setOnSeekBarChangeListener for sliders."),
+  q(4, "What is the lecture's pattern for validating an EditText?", ["getText().toString().trim(), isEmpty(), setError(\"Required\"), return", "Toast and continue", "try/catch around setText", "Throw a RuntimeException"], 0, "Then proceed only if the field is valid."),
+  q(4, "How do you enable View Binding?", ["buildFeatures { viewBinding = true } in build.gradle", "A line in the manifest", "A dependency on RecyclerView", "It is always on"], 0, "A binding class (ActivityMainBinding) is generated at build time. It is type-safe and null-safe."),
+  q(4, "Why do you use if / else instead of switch on view.getId() inside onClick?", ["R.id values are not compile-time constants in recent Gradle plugins", "switch is slower", "switch does not exist in Java", "if is required by the manifest"], 0, "The activity-implements-OnClickListener approach uses one onClick for every view."),
+  q(4, "Why can a lambda be used as a click listener?", ["OnClickListener is a functional interface (one abstract method)", "Lambdas are always allowed", "Because of android:onClick", "Because of View Binding"], 0, "Inside the lambda, this is the activity; an anonymous class needs MainActivity.this."),
+  q(4, "What signature does android:onClick=\"onButtonClick\" require?", ["public void onButtonClick(View view) in the Activity", "private int onButtonClick()", "static void onButtonClick()", "public void onButtonClick() in the Application"], 0, "It is found by reflection and checked only at runtime: a typo crashes on the first tap."),
+  q(4, "On which thread do click callbacks run?", ["Main thread", "A new thread per click", "A worker pool", "The Looper of the Service"], 0, "So handlers must be short; slow work goes to a background thread."),
+  q(4, "A separate listener class (ClickHandler) cannot do what?", ["Access the activity's fields directly", "Implement OnClickListener", "Be reused", "Show a Toast"], 0, "Pass what it needs, such as a Context, through the constructor."),
+  q(4, "Which is the correct dependency for Snackbar and Material Components?", ["com.google.android.material:material", "androidx.recyclerview:recyclerview", "androidx.drawerlayout:drawerlayout", "com.android.support:snack"], 0, "Material Components also provide the floating action button and the Material toolbar."),
+  /* ---- Lecture 5 ---- */
+  q(5, "What does an adapter do?", ["Connects a data source to a list control and creates a View for each element", "Draws the screen", "Starts activities", "Stores files"], 0, "Data source > Adapter > ListView/GridView/Spinner."),
+  q(5, "An ArrayAdapter<Country> with simple_list_item_1 shows each row using ...", ["the object's toString()", "its first field", "its hashCode", "nothing, it crashes"], 0, "Rows with several fields need SimpleAdapter or a BaseAdapter."),
+  q(5, "How does SimpleAdapter match data to views?", ["A List of Maps, with from[] keys matched by position to to[] view ids", "By field names via reflection", "By view tags", "By row number only"], 0, "One Map = one row. Example ids: android.R.id.text1 and text2."),
+  q(5, "Which four methods must a BaseAdapter implement?", ["getCount, getItem, getItemId, getView", "onCreate, onStart, onResume, onPause", "onCreateViewHolder, onBindViewHolder, getItemCount, getItemViewType", "add, remove, update, delete"], 0, "getView(position, convertView, parent) inflates or reuses a row and sets the data."),
+  q(5, "What is the point of the ViewHolder pattern in getView?", ["Avoid repeating findViewById for every row", "Make the list read-only", "Load images faster from the network", "Skip the layout"], 0, "If convertView is null: inflate, findViewById, setTag. Else getTag."),
+  q(5, "Which are the four components of RecyclerView?", ["RecyclerView, Adapter, ViewHolder, LayoutManager", "ListView, Cursor, Loader, Adapter", "Activity, Fragment, Intent, Adapter", "View, Layout, Canvas, Paint"], 0, "The LayoutManager can be Linear, Grid or StaggeredGrid."),
+  q(5, "Which RecyclerView.Adapter method runs every time a row appears on screen?", ["onCreateViewHolder", "onBindViewHolder", "getItemCount", "onAttachedToRecyclerView"], 1, "onCreateViewHolder runs only a few times (builds rows); rows are then recycled and re-bound."),
+  q(5, "You set an adapter on a RecyclerView; the list is empty and there is no error. What did you most likely forget?", ["setLayoutManager", "setContentView", "findViewById", "notifyDataSetChanged in onCreate"], 0, "Always set a LayoutManager, e.g. new LinearLayoutManager(this)."),
+  q(5, "Why is a ScrollView a bad choice for 1000 items?", ["It creates all 1000 views; RecyclerView creates about a dozen and recycles them", "It cannot scroll", "It only supports text", "It needs a Service"], 0, "RecyclerView recycles views that leave the screen."),
+  q(5, "What does notifyDataSetChanged() do compared with ListAdapter + DiffUtil?", ["Rebinds everything with no animations; DiffUtil computes the difference and animates", "It is faster and animated", "It only works for GridView", "It deletes the list"], 0, "Use submitList(newList) with a ListAdapter."),
+  q(5, "In DiffUtil, what do areItemsTheSame and areContentsTheSame compare?", ["identity (the id) and content (equals)", "content and identity", "positions and sizes", "titles and dates only"], 0, "Same item + different content = a change animation."),
+  q(5, "What does inflate(R.layout.row, parent, false) mean?", ["Do not attach the view to the parent now; RecyclerView decides when", "Attach immediately", "Create a copy of the parent", "Repeat the row twice"], 0, "Attaching immediately (true) can crash in an adapter."),
+  q(5, "How should an adapter report a row click?", ["Through an interface the Activity implements (callback)", "By starting the activity itself", "By a static field", "It cannot"], 0, "The adapter exposes an interface (OnNoteClick), the ViewHolder calls it and the Activity decides. Your project uses MovieAdapter.OnMovieListener."),
+  q(5, "Which classes implement swipe to delete in RecyclerView?", ["ItemTouchHelper with SimpleCallback (onSwiped)", "DiffUtil", "GridLayoutManager", "DividerItemDecoration"], 0, "In onSwiped use h.getBindingAdapterPosition() to find the row."),
+  q(5, "Why is the ViewHolder usually a static nested class?", ["To avoid leaking the Activity", "To make it faster to draw", "Because Java requires it", "To share it between apps"], 0, "A non-static inner class keeps an implicit reference to the adapter."),
+  /* ---- Lecture 6 ---- */
+  q(6, "What happens if the main thread is blocked for about 5 seconds?", ["An ANR (Application Not Responding) dialog", "The app is silently restarted", "Nothing", "A crash with NullPointerException"], 0, "A frame budget is 16 ms at 60 Hz."),
+  q(6, "Can you call textView.setText() from a worker thread?", ["No, views must be touched only on the main thread", "Yes, always", "Yes, with a Toast", "Only in Kotlin"], 0, "Use runOnUiThread(...), a Handler on the main Looper, or LiveData.postValue()."),
+  q(6, "Which work must NOT run on the main thread?", ["Network, database and file access, heavy computation", "Updating a TextView", "Showing a Toast", "Short logic"], 0, "Network on the main thread is not allowed at all."),
+  q(6, "What is wrong with creating a raw Thread for every task?", ["Unbounded creation, hard to cancel, leaks the Activity, no lifecycle awareness", "Nothing", "Threads cannot run Java", "It blocks the main thread"], 0, "Prefer an ExecutorService (a thread pool) such as Executors.newFixedThreadPool(4)."),
+  q(6, "In the executor + Handler pattern, which line returns the result to the UI?", ["new Handler(Looper.getMainLooper()).post(() -> adapter.submitList(notes))", "io.execute(...)", "Thread.sleep(...)", "System.exit(0)"], 0, "io.execute(...) runs on a worker; main.post(...) hops back to the main thread."),
+  q(6, "What does a Looper do?", ["Takes the next task from the MessageQueue and runs it on its thread", "Draws the UI", "Compiles code", "Starts services"], 0, "Handler.post() adds a Runnable to the queue; getMainLooper() is the main thread's Looper."),
+  q(6, "Why call handler.removeCallbacks(tick) in onStop()?", ["So the repeating postDelayed task stops when the screen is no longer visible", "To free the main thread forever", "Because onStop deletes the Handler", "It is optional and has no effect"], 0, "Start it in onStart(), stop it in onStop()."),
+  q(6, "Which tool uploads photos even if the app is closed or the device rebooted?", ["WorkManager", "Thread", "Handler", "AsyncTask"], 0, "WorkManager: guaranteed work, constraints, retries; periodic work has a minimum of 15 minutes."),
+  q(6, "What does Worker.doWork() return to ask for a retry?", ["Result.retry()", "Result.success()", "null", "false"], 0, "doWork() already runs on a background thread. It returns success, retry or failure."),
+  q(6, "Which tool fits a music player notification the user can see?", ["Foreground service", "WorkManager", "AlarmManager", "Main thread"], 0, "AlarmManager is for exact-time alarms and reminders."),
+  q(6, "In obsolete AsyncTask, which method runs on the worker thread?", ["doInBackground", "onPreExecute", "onProgressUpdate", "onPostExecute"], 0, "Order: onPreExecute (UI), doInBackground (worker, publishProgress), onProgressUpdate (UI), onPostExecute (UI)."),
+  q(6, "What do the three generic types AsyncTask<Params, Progress, Result> describe?", ["Input of doInBackground, progress values, final result", "Three threads", "Three layouts", "Start, stop, pause"], 0, "Only object types are allowed, not primitives."),
 ];

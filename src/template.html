@@ -145,6 +145,7 @@ td code { font-size: 0.82rem; }
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" id="tab-lab" aria-selected="true" data-tab="lab">Code lab</button>
     <button class="tab" role="tab" id="tab-qf" aria-selected="false" data-tab="qf">Quick fire</button>
+    <button class="tab" role="tab" id="tab-th" aria-selected="false" data-tab="th">Lecture quiz</button>
     <button class="tab" role="tab" id="tab-cheat" aria-selected="false" data-tab="cheat">Cheat sheet</button>
   </div>
 
@@ -171,19 +172,19 @@ td code { font-size: 0.82rem; }
 (function () {
   "use strict";
   var STORE_KEY = "movielab-v1";
-  var state = { tab: "lab", cur: 0, code: {}, status: {}, hint: {}, peek: {}, results: {}, qf: {} };
+  var state = { tab: "lab", cur: 0, code: {}, status: {}, hint: {}, peek: {}, results: {}, qf: {}, th: {}, thLec: 0 };
 
   function load() {
     try {
       var raw = localStorage.getItem(STORE_KEY);
       if (!raw) return;
       var s = JSON.parse(raw);
-      state.code = s.code || {}; state.status = s.status || {}; state.qf = s.qf || {};
+      state.code = s.code || {}; state.status = s.status || {}; state.qf = s.qf || {}; state.th = s.th || {};
       state.cur = typeof s.cur === "number" ? s.cur : 0;
     } catch (e) { /* storage unavailable: run without it */ }
   }
   function save() {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify({ code: state.code, status: state.status, qf: state.qf, cur: state.cur })); } catch (e) {}
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ code: state.code, status: state.status, qf: state.qf, th: state.th, cur: state.cur })); } catch (e) {}
   }
 
   function el(tag, attrs) {
@@ -337,6 +338,35 @@ td code { font-size: 0.82rem; }
     view.appendChild(wrap);
   }
 
+  /* ---------- LECTURE QUIZ ---------- */
+  function renderTH(view) {
+    var wrap = el("div", { class: "qf" });
+    var list = THEORY.map(function (q, i) { return { q: q, i: i }; }).filter(function (x) { return !state.thLec || x.q.lec === state.thLec; });
+    var done = list.filter(function (x) { return state.th[x.i] != null; }).length;
+    var right = list.filter(function (x) { return state.th[x.i] === x.q.a; }).length;
+    var bar = el("div", { class: "row" });
+    [0, 1, 2, 3, 4, 5, 6].forEach(function (n) {
+      bar.appendChild(el("button", { class: "btn" + (state.thLec === n ? " primary" : ""), text: n === 0 ? "All (" + THEORY.length + ")" : "L" + n, title: n ? LECTURES[n] : "All lectures", onclick: function () { state.thLec = n; render(); } }));
+    });
+    wrap.appendChild(bar);
+    wrap.appendChild(el("p", { class: "note", text: (state.thLec ? LECTURES[state.thLec] + ". " : "All lectures. ") + "Answered " + done + " of " + list.length + ", correct " + right + "." }));
+    list.forEach(function (x, n) {
+      var q = x.q, qi = x.i, answered = state.th[qi] != null;
+      var card = el("div", { class: "qcard" }, el("h3", { text: (n + 1) + ". [L" + q.lec + "] " + q.q }));
+      var opts = el("div", { class: "opts" });
+      q.opts.forEach(function (o, oi) {
+        var cls = "opt";
+        if (answered) { if (oi === q.a) cls += " right"; else if (oi === state.th[qi]) cls += " wrong"; }
+        opts.appendChild(el("button", { class: cls, text: o, onclick: function () { if (state.th[qi] != null) return; state.th[qi] = oi; save(); render(); } }));
+      });
+      card.appendChild(opts);
+      if (answered) card.appendChild(el("p", { class: "why", text: (state.th[qi] === q.a ? "Correct. " : "Not quite. ") + q.why }));
+      wrap.appendChild(card);
+    });
+    wrap.appendChild(el("div", { class: "row" }, el("button", { class: "btn", text: "Retake these questions", onclick: function () { list.forEach(function (x) { delete state.th[x.i]; }); save(); render(); } })));
+    view.appendChild(wrap);
+  }
+
   /* ---------- CHEAT SHEET ---------- */
   function renderCheat(view) {
     var grid = el("div", { class: "cheat" });
@@ -392,8 +422,8 @@ td code { font-size: 0.82rem; }
   /* ---------- SHELL ---------- */
   function render() {
     var view = document.getElementById("view"); view.textContent = "";
-    ["lab", "qf", "cheat"].forEach(function (t) { document.getElementById("tab-" + t).setAttribute("aria-selected", String(state.tab === t)); });
-    if (state.tab === "lab") renderLab(view); else if (state.tab === "qf") renderQF(view); else renderCheat(view);
+    ["lab", "qf", "th", "cheat"].forEach(function (t) { document.getElementById("tab-" + t).setAttribute("aria-selected", String(state.tab === t)); });
+    if (state.tab === "lab") renderLab(view); else if (state.tab === "qf") renderQF(view); else if (state.tab === "th") renderTH(view); else renderCheat(view);
     updateProgress();
   }
 
@@ -403,7 +433,7 @@ td code { font-size: 0.82rem; }
   document.getElementById("resetAll").addEventListener("click", function () {
     var b = document.getElementById("resetAll");
     if (b.getAttribute("data-armed") !== "1") { b.setAttribute("data-armed", "1"); b.textContent = "Click again to erase all"; setTimeout(function () { b.removeAttribute("data-armed"); b.textContent = "Reset everything"; }, 2500); return; }
-    state.code = {}; state.status = {}; state.qf = {}; state.cur = 0; save(); b.removeAttribute("data-armed"); b.textContent = "Reset everything"; render();
+    state.code = {}; state.status = {}; state.qf = {}; state.th = {}; state.cur = 0; save(); b.removeAttribute("data-armed"); b.textContent = "Reset everything"; render();
   });
 
   load();
